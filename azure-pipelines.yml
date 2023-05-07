@@ -1,0 +1,51 @@
+# Docker
+# Build and push an image to Azure Container Registry
+# https://docs.microsoft.com/azure/devops/pipelines/languages/docker
+
+trigger:
+- master
+
+resources:
+- repo: self
+
+variables:
+  # Container registry service connection established during pipeline creation
+  dockerRegistryServiceConnection: '5b7b266f-b2a0-41d6-a193-21fdd4e15bf2'
+  imageRepository: 'vstudent'
+  containerRegistry: 'ieeecs.azurecr.io'
+  dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile'
+  tag: '$(Build.BuildId)'
+
+  # Agent VM image name
+  vmImageName: 'ubuntu-latest'
+
+stages:
+- stage: Build
+  displayName: Build and push stage
+  jobs:
+  - job: Build
+    displayName: Build
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - task: Docker@2
+      displayName: Build and push an image to container registry
+      inputs:
+        command: buildAndPush
+        repository: $(imageRepository)
+        dockerfile: $(dockerfilePath)
+        containerRegistry: $(dockerRegistryServiceConnection)
+        tags: |
+          'latest'
+    - task: AzureRmWebAppDeployment@4
+      inputs:
+        ConnectionType: 'AzureRM'
+        azureSubscription: 'Visual Studio Enterprise Subscription(5646fa16-d6e4-4ce6-b706-97e58ee6f12c)'
+        appType: 'webAppContainer'
+        WebAppName: 'backend-vstdnt'
+        deployToSlotOrASE: true
+        ResourceGroupName: 'ieee-computer-society-vit-chennai'
+        SlotName: 'production'
+        DockerNamespace: 'ieeecs.azurecr.io'
+        DockerRepository: 'backend-student'
+        DockerImageTag: 'latest'
