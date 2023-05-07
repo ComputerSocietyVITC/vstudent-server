@@ -1,6 +1,9 @@
 import express, { Application, Request, Response, json } from "express";
+import morgan, { FormatFn } from "morgan";
 import { Browser, Page, launch } from "puppeteer";
+
 import { v4 as uuidv4 } from "uuid";
+import { createLogger, format, transports } from "winston";
 import ParseCaptcha from "../helpers/parseCaptcha";
 import HandleSemesterValues from "./helpers/parseSemesters";
 
@@ -12,10 +15,15 @@ let browser: Browser;
 const app: Application = express();
 app.use(json());
 
+const nginxFormat =
+  ':remote-addr - :remote-user [:date[clf]] ":method :url HTTP/:http-version" :status';
+
+app.use(morgan(nginxFormat));
+
 /* Get session */
 app.get("/sessions/getSession", async (_: Request, res: Response) => {
   try {
-    browser = await launch();
+    browser = await launch({ headless: true });
     const context: Page = await browser.newPage();
     let ctxt_id: string = uuidv4();
     sessions.set(ctxt_id, context);
@@ -59,17 +67,20 @@ app.get("/auth/captcha/:sessionId", async (req: Request, res: Response) => {
     let ele: string = "";
     let captchaPresent: boolean = false;
 
-    try {
+    while (captchaPresent != true) {
+      await page.waitForTimeout(500);
       let element = await page.$("#captchaBlock");
-      if (element) {
-        captchaPresent = true;
+      if (element != null) {
         ele = ParseCaptcha(await page.content());
+        captchaPresent = true;
+      } else {
+        await page.reload();
       }
-    } catch (e) {
-      captchaPresent = false;
     }
-    if (captchaPresent) res.status(200).send({ captcha: ele });
-    else {
+    if (captchaPresent) {
+      console.log(`Captcha sent for ${sessionId}`);
+      res.status(200).send({ captcha: ele });
+    } else {
       res.status(200).send({ captchaPresent: false, captcha: "No Captcha" });
     }
   } else {
@@ -235,13 +246,13 @@ app.get(
 
       let dropDown = await page.$("#semesterSubId");
       dropDown!.select(semesterUniqueID);
-      console.log("Selected semester")
+      console.log("Selected semester");
       dropDown!.click();
 
       const button = await page.$("button.btn.btn-md.btn-primary.btn-block");
       await button?.click();
-      console.log("Clicked on Submit")
-      await page.waitForTimeout(1000)
+      console.log("Clicked on Submit");
+      await page.waitForTimeout(1000);
 
       res.status(200).send(await page.content());
       await page.reload();
