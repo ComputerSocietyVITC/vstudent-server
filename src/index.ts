@@ -1,9 +1,8 @@
 import express, { Application, Request, Response, json } from "express";
-import morgan, { FormatFn } from "morgan";
+import morgan from "morgan";
 import { Browser, Page, launch } from "puppeteer";
 
 import { v4 as uuidv4 } from "uuid";
-import { createLogger, format, transports } from "winston";
 import ParseCaptcha from "../helpers/parseCaptcha";
 import HandleSemesterValues from "./helpers/parseSemesters";
 
@@ -149,7 +148,7 @@ app.get(
         console.log("Closed Sidebar");
 
         let dropDown = await page.$("#semesterSubId");
-        await page.waitForTimeout(125);
+        await page.waitForTimeout(250);
 
         // Select timetable
         await dropDown!.select(semname);
@@ -224,6 +223,8 @@ app.get(
 
       let page = session!;
 
+      await page.waitForNavigation();
+
       await page.click("#vtopHeader > div > button:nth-child(1)");
       console.log("Clicked on Sidebar");
       await page.waitForTimeout(175);
@@ -272,6 +273,7 @@ app.get(
     if (session != undefined) {
       const semesterUniqueID = req.params.semesterUniqueID;
       let page: Page = session!;
+      await page.waitForNavigation();
 
       await page.click("#vtopHeader > div > button:nth-child(1)");
       await page.waitForTimeout(125);
@@ -313,6 +315,7 @@ app.get(
 
     if (session != undefined) {
       let page = session!;
+      await page.waitForNavigation();
 
       await page.click("#vtopHeader > div > button:nth-child(1)");
       console.log("Clicked on Sidebar");
@@ -332,9 +335,7 @@ app.get(
 
       await page.waitForTimeout(1000);
 
-      let _res = await page.content();
-
-      res.status(200).send(_res);
+      res.status(200).send(await page.content());
       await page.reload();
     } else {
       res.status(498).send({ Message: "Invalid Session ID" });
