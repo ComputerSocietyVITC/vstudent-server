@@ -22,7 +22,7 @@ app.use(morgan(nginxFormat));
 /* Get session */
 app.get("/sessions/getSession", async (_: Request, res: Response) => {
   try {
-    browser = await launch({ headless: true });
+    browser = await launch({ headless: "new" });
     const context: Page = await browser.newPage();
     let ctxt_id: string = uuidv4();
     sessions.set(ctxt_id, context);
