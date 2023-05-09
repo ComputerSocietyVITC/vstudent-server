@@ -1,7 +1,9 @@
 import express, { Application, Request, Response, json } from "express";
+import helmet from "helmet";
 import morgan from "morgan";
 import { Browser, Page, launch } from "puppeteer";
 
+import cors from "helmet";
 import { v4 as uuidv4 } from "uuid";
 import ParseCaptcha from "../helpers/parseCaptcha";
 import HandleSemesterValues from "./helpers/parseSemesters";
@@ -11,13 +13,30 @@ const port: number = parseInt(process.env.PORT || "3000", 10);
 const sessions: Map<string, Page> = new Map();
 let browser: Browser;
 
+
+
+
 const app: Application = express();
 app.use(json());
+
 
 const nginxFormat =
   ':remote-addr - :remote-user [:date[clf]] ":method :url HTTP/:http-version" :status';
 
 app.use(morgan(nginxFormat));
+
+
+app.use(cors({
+  // @ts-ignore
+  origin: 'https://vstudent.ieeecsvitc.com'
+}));
+
+app.use(helmet())
+
+app.use((req: Request, res: Response, _) => {
+  res.status(403).send({"Message":"🤫 Nothing ever exisisted here!"});
+});
+
 
 /* Get session */
 app.get("/sessions/getSession", async (_: Request, res: Response) => {
