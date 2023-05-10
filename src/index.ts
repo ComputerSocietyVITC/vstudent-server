@@ -223,7 +223,7 @@ app.get(
 
       let page = session!;
 
-      await page.waitForNavigation();
+      await page.waitForTimeout(1500);
 
       await page.click("#vtopHeader > div > button:nth-child(1)");
       console.log("Clicked on Sidebar");
